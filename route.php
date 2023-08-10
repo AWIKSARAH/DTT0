@@ -9,10 +9,16 @@ error_reporting(E_ALL);
 require __DIR__ . '/model/UserModel.php';
 require __DIR__ . '/controller/UserController.php';
 
+require __DIR__ . '/model/templateModel.php';
+require __DIR__ . '/controller/templateController.php';
+
 include('database.php');
 
 $userModel = new UserModel($db);
 $userController = new UserController($userModel);
+
+$templateModel = new TemplateModel($db);
+$templateController = new TemplateController($templateModel);
 
 $request = $_SERVER['REQUEST_URI'];
 
@@ -46,12 +52,16 @@ switch ($request) {
         require __DIR__ . $viewDir . 'home.php';
 
         break;
+
     case '/DTT/dash':
 
         require __DIR__ . $viewDir . 'dash.php';
 
         break;
 
+    case '/DTT/save_template':
+        $templateController->create();
+        break;
     default:
         http_response_code(404);
         require __DIR__ . $viewDir . '404.php';
