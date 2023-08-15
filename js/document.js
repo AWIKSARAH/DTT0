@@ -2,20 +2,11 @@ const templateSelect = document.getElementById("templateSelect");
 const formContainer = document.getElementById("formContainer");
 const submitButton = document.getElementById("updateSubmit");
 let originalDataContent = {};
-
+let objectValues = {};
+let updatedFields = {};
 let document_id;
 let hasCityField = false;
 const countrySelect = document.getElementById("countryField");
-
-function uploadImage(fileInput, type) {
-  const formData = new FormData();
-  formData.append("image", fileInput.files[0]);
-
-  return fetch(`/DTT/upload?type=${type}`, {
-    method: "POST",
-    body: formData,
-  }).then((response) => response.json());
-}
 
 function fetchTemplateData(id) {
   fetch(`/DTT/get_document?id=${id}`)
@@ -32,6 +23,20 @@ function fetchTemplateData(id) {
         const dataContent = JSON.parse(data.document.data_content);
         document_id = data.document.document_id;
         originalDataContent = dataContent;
+        for (const key in dataContent) {
+          if (dataContent.hasOwnProperty(key)) {
+            const value = dataContent[key];
+            if (
+              typeof value === "object" &&
+              value != null &&
+              !Array.isArray(value)
+            ) {
+              objectValues[key] = value;
+            }
+            console.log(`Key: ${key}, Value:`, value);
+          }
+        }
+        console.log("Object Values:", objectValues);
         renderForm(templateStructure, dataContent);
       } else {
         console.error("Error fetching template data:", data);
@@ -62,7 +67,10 @@ function renderForm(fields, dataContent) {
       inputElement = createSelectInput(field, dataContent[field.field_name]);
     } else if (field.field_type === "checkbox") {
       inputElement = createCheckboxInput(field, dataContent[field.field_name]);
+    } else if (field.field_type === "checkbox") {
+      inputElement = createCheckboxInput(field, dataContent[field.field_name]);
     }
+    //data_content
 
     if (inputElement) {
       const formGroup = document.createElement("div");
@@ -76,32 +84,39 @@ function renderForm(fields, dataContent) {
 submitButton.addEventListener("click", () => {
   event.preventDefault();
   const dataContent = {};
+  const updatedFields = {};
 
   formContainer.querySelectorAll(".form-group").forEach((group) => {
     const input = group.querySelector("input, select, textarea, option");
     if (input) {
       const value = input.value.trim();
       dataContent[input.id] = value;
-     
+      if (input.required && value === "") {
+        hasRequiredFields = true;
+      }
     }
   });
 
-  formContainer.querySelectorAll(".radio-group").forEach((radioGroup) => {
-    const selectedRadio = radioGroup.querySelector(
-      'input[type="radio"]:checked'
-    );
-    if (selectedRadio) {
-      dataContent[radioGroup.id] = selectedRadio.value;
-    } else {
-      hasRequiredFields = true;
+  formContainer.querySelectorAll(".form-group").forEach((group) => {
+    const input = group.querySelector("input, select, textarea, option");
+    if (input) {
+      const value = input.value.trim();
+      dataContent[input.id] = value;
     }
   });
 
-  if (hasRequiredFields) {
-    const errorMessage = document.createElement("div");
-    errorMessage.classList.add("alert", "alert-danger");
-    errorMessage.textContent = "Please fill in all required fields.";
-    formContainer.appendChild(errorMessage);
+  for (const fieldName in dataContent) {
+    if (dataContent.hasOwnProperty(fieldName)) {
+      const newValue = dataContent[fieldName];
+      const oldValue = originalDataContent[fieldName];
+      if (newValue !== oldValue) {
+        updatedFields[fieldName] = newValue;
+      }
+    }
+  }
+
+  if (Object.keys(updatedFields).length === 0) {
+    alert("No changes were made.");
     return;
   }
 
@@ -334,9 +349,25 @@ function submitForm(documentId, dataContent) {
     if (dataContent.hasOwnProperty(fieldName)) {
       const newValue = dataContent[fieldName];
       const oldValue = originalDataContent[fieldName];
-      if (newValue !== oldValue) {
+      if (
+        typeof newValue === "object" &&
+        newValue !== null &&
+        !Array.isArray(newValue)
+      ) {
         updatedFields[fieldName] = newValue;
+      } else if (newValue !== oldValue) {
+        updatedFields[fieldName] = newValue;
+      } else {
+        updatedFields[fieldName] = oldValue;
       }
+    }
+  }
+
+  for (const key in objectValues) {
+    if (objectValues.hasOwnProperty(key)) {
+      const value = objectValues[key];
+      updatedFields[key] = value;
+      console.log(`Key: ${key}, Value:`, value);
     }
   }
 
@@ -345,10 +376,7 @@ function submitForm(documentId, dataContent) {
     document_id: documentId,
   };
 
-  console.log("====================================");
-  console.log(requestData);
-  console.log("====================================");
-
+  console.log("Object Values:", requestData);
   $.ajax({
     url: `/DTT/update_document`,
     method: "PUT",
@@ -356,7 +384,7 @@ function submitForm(documentId, dataContent) {
     contentType: "application/json",
     data: JSON.stringify(requestData),
     success: function (data) {
-      if (data.success) {
+      if (data) {
         alert("Document updated successfully");
         location.reload();
       } else {

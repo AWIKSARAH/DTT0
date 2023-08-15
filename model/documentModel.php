@@ -41,7 +41,6 @@ class DocumentModel
         $stmt = $this->db->prepare($query);
         $dataContentJson = json_encode($dataContent);
 
-        echo "Data Content JSON: " . $dataContentJson . "<br>";
 
         $stmt->bindParam(':data_content', $dataContentJson);
         $stmt->bindParam(':document_id', $documentId);
