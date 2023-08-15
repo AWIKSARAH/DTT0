@@ -16,26 +16,72 @@ class TemplateController
             $templateStructure = json_encode($_POST['template_structure']);
 
             try {
+
                 if ($this->templateModel->createTemplate($templateName, $templateStructure)) {
-                    echo json_encode(array('success' => true, 'message' => 'Template created successfully'));
+                    http_response_code(200);
+                    echo json_encode(['message' => 'Template created successfully']);
+
                 } else {
-                    echo json_encode(array('success' => false, 'message' => 'Failed to create template'));
+                    http_response_code(400);
+                    echo json_encode(['message' => 'Failed to create template']);
+                    // echo "lae";
                 }
             } catch (Exception $e) {
-                error_log('An error occurred: ' . $e->getMessage()); // Log the error message
-                echo json_encode(array('success' => false, 'message' => 'An error occurred: ' . $e->getMessage()));
+                http_response_code(400);
+                error_log('An error occurred: ' . $e->getMessage());
+                echo json_encode(['success' => false, 'message' => 'An error occurred: ' . $e->getMessage()]);
             }
+        }
+    }
+
+    public function getTemplateNames()
+    {
+        try {
+            $templateNames = $this->templateModel->getTemplateNames();
+            header('Content-Type: application/json');
+            echo json_encode(['success' => true, 'template_names' => $templateNames]);
+        } catch (Exception $e) {
+            error_log('An error occurred: ' . $e->getMessage());
+            echo json_encode(['success' => false, 'message' => 'An error occurred: ' . $e->getMessage()]);
         }
     }
 
 
 
-    public function list()
+    public function getTemplate($templateName)
     {
-        $templates = $this->templateModel->getTemplates();
-        include 'views/list_templates.php';
+        try {
+            $templateData = $this->templateModel->getTemplateDataByName($templateName);
+            echo json_encode(['success' => true, 'fields' => $templateData]);
+        } catch (Exception $e) {
+            error_log('An error occurred: ' . $e->getMessage());
+            echo json_encode(['success' => false, 'message' => 'An error occurred: ' . $e->getMessage()]);
+        }
     }
 
+
+    public function getTemplateId($templateName)
+    {
+        try {
+            $templateData = $this->templateModel->getTemplateDataById($templateName);
+            echo json_encode(['success' => true, 'fields' => $templateData]);
+        } catch (Exception $e) {
+            error_log('An error occurred: ' . $e->getMessage());
+            echo json_encode(['success' => false, 'message' => 'An error occurred: ' . $e->getMessage()]);
+        }
+    }
+
+    public function readAll()
+    {
+        try {
+            $templates = $this->templateModel->getAllTemplates();
+            header('Content-Type: application/json');
+            echo json_encode(['success' => true, 'templates' => $templates]);
+        } catch (Exception $e) {
+            error_log('An error occurred: ' . $e->getMessage());
+            echo json_encode(['success' => false, 'message' => 'An error occurred: ' . $e->getMessage()]);
+        }
+    }
     public function update($id)
     {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -54,14 +100,20 @@ class TemplateController
         }
     }
 
-    public function delete($id)
+    public function delete()
     {
-        if ($this->templateModel->deleteTemplate($id)) {
-            header('Location: templates.php');
-        } else {
-            $error = 'Failed to delete template.';
-            $templates = $this->templateModel->getTemplates();
-            include 'views/list_templates.php';
+        $id = $_GET['id'];
+
+
+        try {
+            $success = $this->templateModel->deleteTemplate($id);
+            if ($success) {
+                http_response_code(200);
+                echo json_encode(['success' => true, 'message' => 'Template deleted successfully.']);
+            }
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Failed to delete Template: ' . $e->getMessage()]);
         }
     }
 }

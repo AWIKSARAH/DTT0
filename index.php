@@ -1,30 +1,7 @@
-<!DOCTYPE html>
-<html lang="en">
+<?php
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type");
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My PHP App</title>
-</head>
-
-<body>
-    <header>
-        <?php include "view/header.php"; ?>
-    </header>
-
-    <main>
-        <?php
-        header("Access-Control-Allow-Origin: *");
-        header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
-        header("Access-Control-Allow-Headers: Content-Type");
-
-        require __DIR__ . '/route.php';
-        ?>
-    </main>
-
-    <footer>
-        <?php include "view/footer.php"; ?>
-    </footer>
-</body>
-
-</html>
+require __DIR__ . '/route.php';
+?>

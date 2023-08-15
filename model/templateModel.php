@@ -67,14 +67,72 @@ class TemplateModel
         return false;
     }
 
-    public function templateExists($templateName)
+
+    public function getTemplateNames()
     {
-        $query = "SELECT COUNT(*) as count FROM templates WHERE template_name = :templateName";
+        $query = "SELECT template_id, template_name FROM template";
+
         $stmt = $this->db->prepare($query);
-        $stmt->bindParam(':templateName', $templateName);
         $stmt->execute();
 
-        $result = $stmt->fetch(PDO::FETCH_ASSOC);
-        return $result['count'] > 0;
+        $templates = [];
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $templateId = $row['template_id'];
+            $templateName = $row['template_name'];
+            $templates[] = ['template_id' => $templateId, 'template_name' => $templateName];
+        }
+
+        // Return the array of template information
+        return $templates;
+    }
+
+    public function getAllTemplates()
+    {
+        $query = "SELECT * FROM template";
+        $statement = $this->db->prepare($query);
+        $statement->execute();
+
+        $templates = $statement->fetchAll(PDO::FETCH_ASSOC);
+        return $templates;
+    }
+
+    public function getTemplateDataByName($templateName)
+    {
+        try {
+            $query = "SELECT * FROM template WHERE template_name = :template_name";
+            $stmt = $this->db->prepare($query);
+            $stmt->bindValue(':template_name', $templateName);
+            $stmt->execute();
+            $templateData = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($templateData) {
+                $templateData['fields'] = json_decode($templateData['template_structure'], true);
+                return $templateData;
+            } else {
+                return null;
+            }
+        } catch (PDOException $e) {
+            throw new Exception('Database error: ' . $e->getMessage());
+        }
+    }
+
+    public function getTemplateDataById($templateId)
+    {
+        try {
+            $query = "SELECT * FROM template WHERE template_id = :template_id";
+            $stmt = $this->db->prepare($query);
+            $stmt->bindValue(':template_id', $templateId);
+            $stmt->execute();
+            $templateData = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($templateData) {
+                $templateData['fields'] = json_decode($templateData['template_structure'], true);
+                return $templateData;
+            } else {
+                return null;
+            }
+        } catch (PDOException $e) {
+            throw new Exception('Database error: ' . $e->getMessage());
+        }
     }
 }

@@ -26,8 +26,11 @@ class UserController
             if (empty($username) || empty($email) || empty($password)) {
                 $error_message = "Please fill all the required fields";
             } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                http_response_code(404);
+
                 $error_message = "Invalid Email !";
             } else {
+                http_response_code(200);
                 $userId = $this->userModel->createUser($username, $email, $password, $isAdmin);
 
                 if ($userId != false) {
@@ -35,6 +38,7 @@ class UserController
                     header("Location: /DTT/");
                     exit;
                 } else {
+                    http_response_code(500);
                     $error_message = "Error while registering user ";
                 }
             }
@@ -60,7 +64,7 @@ class UserController
                 $user = $this->userModel->getUserByUsername($username);
                 if ($user && password_verify($password, $user['password'])) {
                     echo "login";
-                    $_SESSION["user_id"] = $user['id'];
+                    $_SESSION["user_id"] = $user['user_id'];
                     $_SESSION["username"] = $user['username'];
                     if ($user['isAdmin'] === 0) {
                         header("Location: /DTT/home");
