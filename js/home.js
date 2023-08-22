@@ -2,10 +2,10 @@ const FormComponent = (function () {
   const templateSelect = document.getElementById("templateSelect");
   const formContainer = document.getElementById("formContainer");
   const submitButton = document.getElementById("submitButton");
+  const countrySelect = document.getElementById("countryField");
   let template_id;
   submitButton.style.display = "none";
   let hasCityField = false;
-  const countrySelect = document.getElementById("countryField");
 
   function uploadImage(fileInput, type) {
     const formData = new FormData();
@@ -26,7 +26,7 @@ const FormComponent = (function () {
         return response.json();
       })
       .then((data) => {
-        console.log("====================================");
+        console.log("=================njnjn===================");
         console.log(data);
         console.log("====================================");
         if (data.success) {
@@ -55,6 +55,9 @@ const FormComponent = (function () {
         return response.json();
       })
       .then((data) => {
+        console.log("====================================");
+        console.log(data);
+        console.log("====================================");
         if (data.success) {
           const templateStructure = JSON.parse(data.fields.template_structure);
           template_id = data.fields.template_id;
@@ -76,8 +79,6 @@ const FormComponent = (function () {
 
       if (field.field_type === "text") {
         inputElement = createTextInput(field);
-      } else if (field.field_type === "radio") {
-        inputElement = createRadioInput(field);
       } else if (field.field_type === "file") {
         inputElement = createFileInput(field);
       } else if (field.field_type === "number") {
@@ -87,12 +88,13 @@ const FormComponent = (function () {
       } else if (field.field_type === "city") {
         hasCityField = true;
       } else if (field.field_type === "select") {
-        inputElement = createSelectInput(field, dataContent[field.field_name]);
+        inputElement = createSelectInput(field, field.options);
+      } else if (field.field_type === "date") {
+        inputElement = createDateInput(field);
       } else if (field.field_type === "checkbox") {
-        inputElement = createCheckboxInput(
-          field,
-          dataContent[field.field_name]
-        );
+        inputElement = createCheckboxInput(field, field.options);
+      } else if (field.field_type === "radio") {
+        inputElement = createRadioInput(field, field.options);
       }
 
       if (inputElement) {
@@ -115,15 +117,13 @@ const FormComponent = (function () {
       submitButton.style.display = "none";
     }
   });
-
-  submitButton.addEventListener("click", () => {
+  function submitButtonHandler(event) {
     event.preventDefault();
-    const selectedTemplate = templateSelect.value;
     const dataContent = {};
     let hasRequiredFields = false;
 
     formContainer.querySelectorAll(".form-group").forEach((group) => {
-      const input = group.querySelector("input, select, textarea, option");
+      const input = group.querySelector("input, select, textarea");
       if (input) {
         const value = input.value.trim();
         dataContent[input.id] = value;
@@ -138,11 +138,25 @@ const FormComponent = (function () {
         'input[type="radio"]:checked'
       );
       if (selectedRadio) {
-        dataContent[radioGroup.id] = selectedRadio.value;
+        const fieldName = selectedRadio.name;
+        const value = selectedRadio.value;
+        dataContent[fieldName] = value;
       } else {
         hasRequiredFields = true;
       }
     });
+
+    if (hasCityField) {
+      const citySelect = document.querySelector(".city-select");
+      if (citySelect) {
+        const selectedCity = citySelect.value;
+        dataContent["city"] = selectedCity;
+      }
+    }
+    if (countrySelect) {
+      const selectedCountry = countrySelect.value;
+      dataContent["country"] = selectedCountry;
+    }
 
     if (hasRequiredFields) {
       const errorMessage = document.createElement("div");
@@ -153,7 +167,9 @@ const FormComponent = (function () {
     }
 
     submitForm(template_id, dataContent);
-  });
+  }
+
+  submitButton.addEventListener("click", submitButtonHandler);
 
   formContainer.addEventListener("change", (event) => {
     const target = event.target;
@@ -179,20 +195,28 @@ const FormComponent = (function () {
     }
   });
 
+  function createRequiredLabel(required) {
+    const label = document.createElement("span");
+    label.classList.add("required-label");
+    label.textContent = required ? "(Required)" : "(Optional)";
+    return label;
+  }
+
   function createCountryInput(field) {
     const container = document.createElement("div");
     container.classList.add("form-group");
 
-    const label = document.createElement("label");
-    label.for = field.field_name;
-    label.textContent = field.field_name;
-    container.appendChild(label);
+    const countryLabel = document.createElement("label");
+    countryLabel.for = field.field_name;
+    countryLabel.textContent = field.field_name;
+    container.appendChild(countryLabel);
 
     const select = document.createElement("select");
     select.classList.add("form-control");
     select.id = field.field_name;
-    select.required = true;
-
+    if (field.required) {
+      select.required = true;
+    }
     fetch("data/country.json")
       .then((response) => response.json())
       .then((data) => {
@@ -205,6 +229,11 @@ const FormComponent = (function () {
         });
 
         if (hasCityField) {
+          const cityLabel = document.createElement("label");
+          cityLabel.for = "cityField";
+          cityLabel.textContent = "City";
+          container.appendChild(cityLabel);
+
           const citySelect = createCitySelect();
           select.addEventListener("change", () => {
             const selectedCountry = select.value;
@@ -212,6 +241,13 @@ const FormComponent = (function () {
             updateCityOptions(citySelect, cities);
           });
           container.appendChild(citySelect);
+
+          if (countries.length > 0) {
+            const firstCountry = countries[0];
+            select.value = firstCountry;
+            const cities = data[firstCountry];
+            updateCityOptions(citySelect, cities);
+          }
         }
       })
       .catch((error) => {
@@ -219,12 +255,15 @@ const FormComponent = (function () {
       });
 
     container.appendChild(select);
+    const requiredLabel = createRequiredLabel(field.required);
+    container.appendChild(requiredLabel);
 
     return container;
   }
 
   function createCitySelect() {
     const select = document.createElement("select");
+
     select.classList.add("form-control", "city-select");
     select.required = true;
     return select;
@@ -238,6 +277,9 @@ const FormComponent = (function () {
       option.textContent = city;
       select.appendChild(option);
     });
+    if (cities.length > 0) {
+      select.value = cities[0];
+    }
   }
 
   function createTextInput(field) {
@@ -246,17 +288,19 @@ const FormComponent = (function () {
 
     const label = document.createElement("label");
     label.for = field.field_name;
-    label.textContent = field.field_name;
+    label.textContent = field.field_name + " :";
     container.appendChild(label);
 
     const input = document.createElement("input");
     input.type = "text";
     input.classList.add("form-control");
     input.id = field.field_name;
-    input.placeholder = field.field_name;
+    input.placeholder = "Enter the " + field.field_name;
     input.required = true;
 
     container.appendChild(input);
+    const requiredLabel = createRequiredLabel(field.required);
+    container.appendChild(requiredLabel);
 
     return container;
   }
@@ -278,35 +322,39 @@ const FormComponent = (function () {
     input.required = true;
 
     container.appendChild(input);
+    const requiredLabel = createRequiredLabel(field.required);
+    container.appendChild(requiredLabel);
 
     return container;
   }
 
-  function createRadioInput(field) {
+  function createRadioInput(field, options) {
     const radioGroup = document.createElement("div");
-    radioGroup.classList.add("radio-group");
-    radioGroup.id = `radio_${field.field_name}`;
+    radioGroup.classList.add("form-group");
+
     const label = document.createElement("label");
     label.for = field.field_name;
     label.textContent = field.field_name;
-
     radioGroup.appendChild(label);
 
-    field.options.forEach((option) => {
+    options.forEach((option) => {
       const radioContainer = document.createElement("div");
       radioContainer.classList.add("form-check");
-      const input = document.createElement("input");
-      input.type = "radio";
-      input.classList.add("form-check-input");
-      input.name = `radio_${field.field_name}`;
-      input.value = option;
-      input.required = true;
-      const optionLabel = document.createElement("label");
-      optionLabel.classList.add("form-check-label");
-      optionLabel.textContent = option;
-      optionLabel.for = `${field.field_name}_${option}`;
-      radioContainer.appendChild(input);
-      radioContainer.appendChild(optionLabel);
+
+      const radio = document.createElement("input");
+      radio.type = "radio";
+      radio.classList.add("form-check-input");
+      radio.name = field.field_name;
+      radio.value = option;
+      radio.required = field.required;
+
+      const radioLabel = document.createElement("label");
+      radioLabel.classList.add("form-check-label");
+      radioLabel.for = `${field.field_name}_${option}`;
+      radioLabel.textContent = option;
+
+      radioContainer.appendChild(radio);
+      radioContainer.appendChild(radioLabel);
 
       radioGroup.appendChild(radioContainer);
     });
@@ -319,7 +367,9 @@ const FormComponent = (function () {
     fileInput.type = "file";
     fileInput.classList.add("form-control-file");
     fileInput.id = field.field_name;
-    fileInput.accept = field.type + "/*";
+
+    fileInput.accept = field.type === ".pdf" ? "application/pdf" : "image/*";
+
     fileInput.required = true;
 
     const label = document.createElement("label");
@@ -330,10 +380,13 @@ const FormComponent = (function () {
     fileContainer.classList.add("form-group");
     fileContainer.appendChild(label);
     fileContainer.appendChild(fileInput);
+    const requiredLabel = createRequiredLabel(field.required);
+    fileContainer.appendChild(requiredLabel);
 
     return fileContainer;
   }
-  function createSelectInput(field) {
+
+  function createSelectInput(field, options) {
     const container = document.createElement("div");
     container.classList.add("form-group");
 
@@ -345,9 +398,15 @@ const FormComponent = (function () {
     const select = document.createElement("select");
     select.classList.add("form-control");
     select.id = field.field_name;
-    select.required = true;
+    select.required = field.required;
+    const defaultOption = document.createElement("option");
+    defaultOption.value = "";
+    defaultOption.textContent = "Choose one";
+    defaultOption.disabled = true;
+    defaultOption.selected = true;
+    select.appendChild(defaultOption);
 
-    field.options.forEach((option) => {
+    options.forEach((option) => {
       const optionElement = document.createElement("option");
       optionElement.value = option;
       optionElement.textContent = option;
@@ -355,26 +414,65 @@ const FormComponent = (function () {
     });
 
     container.appendChild(select);
+    const requiredLabel = createRequiredLabel(field.required);
+    container.appendChild(requiredLabel);
 
     return container;
   }
 
-  function createCheckboxInput(field) {
-    const container = document.createElement("div");
-    container.classList.add("form-check");
-
-    const input = document.createElement("input");
-    input.type = "checkbox";
-    input.classList.add("form-check-input");
-    input.id = field.field_name;
+  function createCheckboxInput(field, options) {
+    const checkboxGroup = document.createElement("div");
+    checkboxGroup.classList.add("form-group");
 
     const label = document.createElement("label");
-    label.classList.add("form-check-label");
     label.for = field.field_name;
     label.textContent = field.field_name;
+    checkboxGroup.appendChild(label);
+
+    options.forEach((option) => {
+      const checkboxContainer = document.createElement("div");
+      checkboxContainer.classList.add("form-check");
+
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.classList.add("form-check-input");
+      checkbox.id = `${field.field_name}_${option}`;
+      checkbox.value = option;
+      checkbox.required = field.required;
+
+      const checkboxLabel = document.createElement("label");
+      checkboxLabel.classList.add("form-check-label");
+      checkboxLabel.for = checkbox.id;
+      checkboxLabel.textContent = option;
+
+      checkboxContainer.appendChild(checkbox);
+      checkboxContainer.appendChild(checkboxLabel);
+
+      checkboxGroup.appendChild(checkboxContainer);
+    });
+    const requiredLabel = createRequiredLabel(field.required);
+    checkboxGroup.appendChild(requiredLabel);
+    return checkboxGroup;
+  }
+
+  function createDateInput(field) {
+    const container = document.createElement("div");
+    container.classList.add("form-group");
+
+    const label = document.createElement("label");
+    label.for = field.field_name;
+    label.textContent = field.field_name;
+    container.appendChild(label);
+
+    const input = document.createElement("input");
+    input.type = "date";
+    input.classList.add("form-control");
+    input.id = field.field_name;
+    input.required = true;
 
     container.appendChild(input);
-    container.appendChild(label);
+    const requiredLabel = createRequiredLabel(field.required);
+    container.appendChild(requiredLabel);
 
     return container;
   }
@@ -412,7 +510,27 @@ const FormComponent = (function () {
           dataContent["city"] = citySelect.value;
         }
       }
+      formContainer.querySelectorAll("select").forEach((select) => {
+        const fieldName = select.id;
+        dataContent[fieldName] = select.value;
+      });
 
+      formContainer.querySelectorAll('input[type="radio"]').forEach((radio) => {
+        if (radio.checked) {
+          const fieldName = radio.name;
+          dataContent[fieldName] = radio.value;
+        }
+      });
+
+      formContainer
+        .querySelectorAll('input[type="checkbox"]')
+        .forEach((checkbox) => {
+          if (checkbox.checked) {
+            const fieldName = checkbox.name;
+            dataContent[fieldName] = dataContent[fieldName] || [];
+            dataContent[fieldName].push(checkbox.value);
+          }
+        });
       const requestData = {
         template_id: template_id,
         data_content: dataContent,
@@ -450,5 +568,3 @@ const FormComponent = (function () {
 })();
 
 FormComponent.init();
-const modalTemplateId = updateModal.getAttribute("data-template-id");
-FormComponent.init(modalTemplateId);

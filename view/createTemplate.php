@@ -17,13 +17,22 @@
                     <label for="Document-Name">Document Name</label>
                     <input type="text" class="form-control Document-Name" id="Document-Name" aria-required="true"
                         placeholder="Enter field name">
+                    <label for="type-select">Type</label>
+                    <select class="form-control" id="type-select" name="type_id">
+                        <option selected disabled>Choose one</option>
+                    </select>
                     <label for="field-name">Field Name</label>
                     <input type="text" class="form-control" id="field-name" placeholder="Enter field name"
                         aria-required="true">
+                    <label for="field-required">Required</label>
+                    <input type="checkbox" class="form-check-input" id="field-required">
                 </div>
+
                 <div class="form-group col-md-6">
                     <label for="field-type">Field Type</label>
                     <select class="form-control field-type" id="field-type">
+                        <option selected disabled>Choose one</option>
+
                         <option value="text">Text</option>
                         <option value="checkbox">Checkbox</option>
                         <option value="radio">Radio</option>
@@ -34,16 +43,14 @@
                         <option value="country">Country</option>
                         <option value="city">City</option>
                     </select>
+
                 </div>
                 <div class="form-group col-md-6">
                     <label for="file-accept-container">File Accept</label>
                     <select class="form-control" id="file-accept-container" class="file-accept-container"
                         style="display:none">
                         <option value="image/*">Images</option>
-                        <option value="audio/*">Audio</option>
-                        <option value="video/*">Video</option>
                         <option value=".pdf">PDF</option>
-                        <option value=".txt,.csv">Text and CSV</option>
                     </select>
                 </div>
 
@@ -67,12 +74,44 @@
         $(document).ready(function () {
             var fields = [];
 
+            fetch('/DTT/get_types')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch types.');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    var typeSelect = $('#type-select');
+                    data.types.forEach(type => {
+                        typeSelect.append($('<option>', {
+                            value: type.type_id,
+                            text: type.type_name
+                        }));
+                    });
+                })
+                .catch(error => {
+                    alert(error.message);
+                });
+
+
             $('#add-field').on('click', function () {
                 var fieldName = $('#field-name').val();
                 var fieldType = $('#field-type').val();
+                var isFieldRequired = $('#field-required').prop('checked');
+
+                var existingField = fields.find(field => field.field_name === fieldName);
+    if (existingField) {
+        alert("Field name already exists. Please choose a different name.");
+        return;
+    }
+    
                 var field = {
                     field_name: fieldName,
-                    field_type: fieldType
+                    field_type: fieldType,
+                    required: isFieldRequired,
+                    isDeleted: false
+
                 };
                 if (!fieldName) {
                     alert("Enter a Name For the field")
@@ -90,9 +129,8 @@
                     }
 
                     if (fieldType === 'file') {
-                        field.type = 'file';
-                        var fileAccept = $('#file-accept').val();
-                        field.fileAccept = fileAccept;
+                        var fileAccept = $('#file-accept-container').val();
+                        field.type = fileAccept;
                     }
 
                     fields.push(field);
@@ -150,7 +188,7 @@
                 if (fields.length > 0) {
                     html += '<div class="col-md-6">';
                     html += '<h3>Fields:</h3>';
-                    html += '<h2>Document Name: ' + fields[0].document_name + '</h2>';
+                    html += '<h2>Document Name: ' + $('#Document-Name').val() + '</h2>';
                     html += '<ul>';
                     fields.forEach(function (field) {
                         html += '<li>' + field.field_name + ' - ' + field.field_type + '</li>';
@@ -171,24 +209,33 @@
             }
 
             $('#save-template').on('click', function () {
+                var fieldTypeTemplate = $('#type-select').val();
                 var documentName = $('#Document-Name').val();
-                var jsonData = {
-                    template_name: documentName,
-                    template_structure: fields
-                };
-                if (!documentName || !fields) {
-                    alert("U can't save an empty template.");
+
+                if (!documentName || fields.length === 0) {
+                    alert("Please fill in the document name and add at least one field.");
                     return;
                 }
+                if (!fieldTypeTemplate) {
+                    alert("Should choose a type for your Template");
+                    return;
+                }
+                var jsonData = {
+                    template_name: documentName,
+                    template_structure: fields,
+                    type_id: fieldTypeTemplate
+                };
                 $.ajax({
                     type: "POST",
                     url: "/DTT/save_template/",
-                    data: jsonData,
+                    data: JSON.stringify(jsonData),
+                    contentType: "application/json",
                     dataType: 'json',
 
                 })
                     .done(function (res) {
                         alert(res.message);
+                        location.reload();
 
                     })
                     .fail(function (xhr, status, error) {

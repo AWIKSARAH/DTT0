@@ -33,7 +33,6 @@
             </div>
         </div>
     </div>
-    <!-- Modal -->
 
     <!-- Update Modal -->
     <div class="modal fade" id="updateModal" tabindex="-1" role="dialog" aria-labelledby="updateModalLabel"
@@ -78,6 +77,9 @@
             fetch("/DTT/get_documents/")
                 .then((response) => response.json())
                 .then((data) => {
+                    console.log('====================================');
+                    console.log(data);
+                    console.log('====================================');
                     data.documents.forEach((doc) => {
                         const row = docList.insertRow();
                         row.classList.add("document-row");
@@ -96,28 +98,61 @@
                                             .replace(/\\"/g, '"')
                                     );
                             const cell = row.insertCell(3);
-
                             if (typeof dataContent === "object" && dataContent !== null) {
                                 for (const key in dataContent) {
                                     if (dataContent.hasOwnProperty(key)) {
-                                        const p = document.createElement("p");
-                                        if (key.includes("Image") && dataContent[key].filename) {
-                                            const img = document.createElement("img");
-                                            img.src =
-                                                "http://localhost/DTT/uploads/" + dataContent[key].filename;
-                                            img.alt = key;
-                                            img.style.maxWidth = "100px";
-                                            img.style.maxHeight = "100px";
-                                            cell.appendChild(img);
+                                        const row = document.createElement("tr");
+                                        const labelCell = document.createElement("td");
+                                        labelCell.textContent = key + ":";
+                                        row.appendChild(labelCell);
+
+                                        const valueCell = document.createElement("td");
+
+                                        if (dataContent[key] && dataContent[key].type) {
+                                            if (dataContent[key].type.includes("image")) {
+                                                const imgContainer = document.createElement("div");
+                                                imgContainer.style.maxWidth = "100px";
+                                                imgContainer.style.maxHeight = "100px";
+
+                                                const img = document.createElement("img");
+                                                img.src = "http://localhost/DTT/uploads/" + dataContent[key].filename;
+                                                img.alt = key;
+                                                img.style.width = "100%";
+                                                img.style.height = "100%";
+
+                                                const imgLink = document.createElement("a");
+                                                imgLink.href = img.src;
+                                                img.target = "_blank";
+                                                imgLink.appendChild(img);
+
+                                                imgContainer.appendChild(imgLink);
+                                                valueCell.appendChild(imgContainer);
+                                            } else if (dataContent[key].type.includes("pdf")) {
+                                                const link = document.createElement("a");
+                                                link.href = "http://localhost/DTT/uploads/" + dataContent[key].filename;
+                                                link.target = "_blank";
+                                                link.textContent = "Open PDF";
+                                                valueCell.appendChild(link);
+                                            } else {
+                                                const link = document.createElement("a");
+                                                link.href = "http://localhost/DTT/uploads/" + dataContent[key].filename;
+                                                link.target = "_blank";
+                                                link.textContent = dataContent[key].filename;
+                                                valueCell.appendChild(link);
+                                            }
                                         } else {
-                                            p.textContent = key + ": " + dataContent[key];
-                                            cell.appendChild(p);
+                                            valueCell.textContent = dataContent[key];
+
                                         }
+
+                                        row.appendChild(valueCell);
+                                        cell.appendChild(row);
                                     }
                                 }
                             } else {
                                 cell.textContent = doc.data_content;
                             }
+
 
                             /*  Delete Button */
 

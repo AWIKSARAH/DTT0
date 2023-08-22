@@ -17,7 +17,7 @@
         <div class="form-group">
             <label for="templateSelect">Select Template:</label>
             <select class="form-control" id="templateSelect">
-                <option value="">Select a Template</option>
+                <option selected disabled>Choose one</option>
             </select>
 
 

@@ -70,7 +70,6 @@ function renderForm(fields, dataContent) {
     } else if (field.field_type === "checkbox") {
       inputElement = createCheckboxInput(field, dataContent[field.field_name]);
     }
-    //data_content
 
     if (inputElement) {
       const formGroup = document.createElement("div");
@@ -97,14 +96,6 @@ submitButton.addEventListener("click", () => {
     }
   });
 
-  formContainer.querySelectorAll(".form-group").forEach((group) => {
-    const input = group.querySelector("input, select, textarea, option");
-    if (input) {
-      const value = input.value.trim();
-      dataContent[input.id] = value;
-    }
-  });
-
   for (const fieldName in dataContent) {
     if (dataContent.hasOwnProperty(fieldName)) {
       const newValue = dataContent[fieldName];
@@ -116,7 +107,7 @@ submitButton.addEventListener("click", () => {
   }
 
   if (Object.keys(updatedFields).length === 0) {
-    alert("No changes were made.");
+    alert("No changes were made!");
     return;
   }
 
@@ -134,10 +125,14 @@ formContainer.addEventListener("change", (event) => {
       .then((data) => {
         const cities = data[selectedCountry];
         citySelect.innerHTML = "";
+        console.log("=================ggg===================");
+        console.log(cities);
+        console.log("====================================");
         cities.forEach((city) => {
           const option = document.createElement("option");
           option.value = city;
           option.textContent = city;
+          console.log("citySelect:", citySelect);
           citySelect.appendChild(option);
         });
       })
@@ -194,19 +189,63 @@ function createCountryInput(field, defaultValue) {
   return container;
 }
 
+function createCityInput(field, defaultValue) {
+  const container = document.createElement("div");
+  container.classList.add("form-group");
+
+  const label = document.createElement("label");
+  label.for = field.field_name;
+  label.textContent = field.field_name;
+  container.appendChild(label);
+
+  const citySelect = createCitySelect();
+  container.appendChild(citySelect);
+
+  const selectedCountry = countrySelect.value;
+  if (selectedCountry) {
+    fetch("../data/country.json")
+      .then((response) => response.json())
+      .then((data) => {
+        const cities = data[selectedCountry];
+        updateCityOptions(citySelect, cities, defaultValue);
+      })
+      .catch((error) => {
+        console.error("Error fetching city data:", error);
+      });
+  }
+
+  return container;
+}
+
 function createCitySelect() {
   const select = document.createElement("select");
   select.classList.add("form-control", "city-select");
   select.required = true;
+
+  select.addEventListener("change", () => {
+    const selectedCountry = countrySelect.value;
+    const cities = data[selectedCountry];
+    const selectedCity = select.value;
+
+    updatedFields.city = selectedCity; // Add selected city to updatedFields
+
+    // You can also update the city options here if needed
+    updateCityOptions(select, cities, selectedCity);
+  });
+
   return select;
 }
 
-function updateCityOptions(select, cities) {
+function updateCityOptions(select, cities, defaultValue) {
   select.innerHTML = "";
   cities.forEach((city) => {
     const option = document.createElement("option");
     option.value = city;
     option.textContent = city;
+    if (defaultValue === city) {
+      option.selected = true;
+    }
+
     select.appendChild(option);
   });
 }
@@ -344,7 +383,28 @@ function submitForm(documentId, dataContent) {
   event.preventDefault();
 
   const updatedFields = {};
-
+  formContainer.querySelectorAll(".form-group").forEach((group) => {
+    const input = group.querySelector("input, select, textarea, option");
+    if (input) {
+      const value = input.value.trim();
+      dataContent[input.id] = value;
+      if (input.required && value === "") {
+        hasRequiredFields = true;
+      } else if (
+        input.id in originalDataContent &&
+        originalDataContent[input.id] !== value
+      ) {
+        updatedFields[input.id] = value;
+      }
+    }
+  });
+  const citySelect = formContainer.querySelector(".city-select");
+  if (citySelect) {
+    const selectedCity = citySelect.value;
+    dataContent.city = selectedCity;
+  } else {
+    alert("nonon");
+  }
   for (const fieldName in dataContent) {
     if (dataContent.hasOwnProperty(fieldName)) {
       const newValue = dataContent[fieldName];
@@ -385,7 +445,7 @@ function submitForm(documentId, dataContent) {
     data: JSON.stringify(requestData),
     success: function (data) {
       if (data) {
-        alert("Document updated successfully");
+        // alert("Document updated successfully");
         location.reload();
       } else {
         alert("Failed to update document");

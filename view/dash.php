@@ -20,7 +20,8 @@
                     Template</button>
                 <button class="btn btn-primary" onclick="window.location.href='view/listDocument.php'">
                     Document</button>
-
+                <button class="btn btn-primary" onclick="window.location.href='view/type.php'">
+                    Type</button>
             </div>
         </div>
     </div>

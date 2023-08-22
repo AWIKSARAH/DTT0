@@ -17,18 +17,17 @@ class UserController
         $error_message = '';
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-
             $username = $_POST['username'];
             $email = $_POST['email'];
             $password = $_POST['password'];
+
             $isAdmin = isset($_POST['isAdmin']) ? $_POST['isAdmin'] : false;
 
             if (empty($username) || empty($email) || empty($password)) {
                 $error_message = "Please fill all the required fields";
             } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
                 http_response_code(404);
-
-                $error_message = "Invalid Email !";
+                $error_message = "Invalid Email!";
             } else {
                 http_response_code(200);
                 $userId = $this->userModel->createUser($username, $email, $password, $isAdmin);
@@ -39,14 +38,14 @@ class UserController
                     exit;
                 } else {
                     http_response_code(500);
-                    $error_message = "Error while registering user ";
+                    $error_message = "Error while registering user";
                 }
             }
 
             include('view/register.php');
         }
-
     }
+
 
 
     public function loginUser()
