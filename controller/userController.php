@@ -33,7 +33,6 @@ class UserController
                 $userId = $this->userModel->createUser($username, $email, $password, $isAdmin);
 
                 if ($userId != false) {
-                    echo "Registration successful. Redirecting to login page...";
                     header("Location: /DTT/");
                     exit;
                 } else {
@@ -62,7 +61,6 @@ class UserController
             } else {
                 $user = $this->userModel->getUserByUsername($username);
                 if ($user && password_verify($password, $user['password'])) {
-                    echo "login";
                     $_SESSION["user_id"] = $user['user_id'];
                     $_SESSION["username"] = $user['username'];
                     if ($user['isAdmin'] === 0) {

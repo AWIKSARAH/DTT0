@@ -90,24 +90,34 @@ class TemplateController
             echo json_encode(['success' => false, 'message' => 'An error occurred: ' . $e->getMessage()]);
         }
     }
-    public function update($id)
+    public function update()
     {
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $newTemplateName = $_POST['template_name'];
-            $newTemplateStructure = $_POST['template_structure'];
-            $newTypeId = $_POST['type_id']; // Add this line to retrieve type_id from the form
+        $id = $_GET['id'];
 
-            if ($this->templateModel->updateTemplate($id, $newTemplateName, $newTemplateStructure, $newTypeId)) {
-                header('Location: templates.php');
+        try {
+            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+                $newTemplateName = $_POST['template_name'];
+                $newTemplateStructure = $_POST['template_structure'];
+                $newTypeId = $_POST['type_id'];
+
+                if ($this->templateModel->updateTemplate($id, $newTemplateName, $newTemplateStructure, $newTypeId)) {
+                    http_response_code(200);
+                    echo json_encode(['success' => true, 'message' => 'Template updated successfully']);
+                } else {
+                    http_response_code(500);
+                    echo json_encode(['success' => false, 'message' => 'Failed to update Template']);
+                }
             } else {
-                $error = 'Failed to update template.';
-                include 'views/update_template.php';
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Invalid request method']);
             }
-        } else {
-            $template = $this->templateModel->getTemplateById($id);
-            include 'views/update_template.php';
+        } catch (Exception $e) {
+            http_response_code(500);
+            error_log('An error occurred: ' . $e->getMessage());
+            echo json_encode(['success' => false, 'message' => 'An error occurred: ' . $e->getMessage()]);
         }
     }
+
 
     public function delete()
     {

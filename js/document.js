@@ -53,21 +53,23 @@ function renderForm(fields, dataContent) {
   fields.forEach((field) => {
     let inputElement;
 
-    if (field.field_type === "text") {
+    if (field.field_type === "text" && !field.isDeleted) {
       inputElement = createTextInput(field, dataContent[field.field_name]);
-    } else if (field.field_type === "radio") {
+    } else if (field.field_type === "file" && !field.isDeleted) {
+      inputElement = createFileInput(field);
+    } else if (field.field_type === "radio" && !field.isDeleted) {
       inputElement = createRadioInput(field, dataContent[field.field_name]);
-    } else if (field.field_type === "number") {
+    } else if (field.field_type === "number" && !field.isDeleted) {
       inputElement = createNumberInput(field, dataContent[field.field_name]);
-    } else if (field.field_type === "country") {
+    } else if (field.field_type === "country" && !field.isDeleted) {
       inputElement = createCountryInput(field, dataContent[field.field_name]);
-    } else if (field.field_type === "city") {
+    } else if (field.field_type === "city" && !field.isDeleted) {
       hasCityField = true;
-    } else if (field.field_type === "select") {
+    } else if (field.field_type === "select" && !field.isDeleted) {
       inputElement = createSelectInput(field, dataContent[field.field_name]);
-    } else if (field.field_type === "checkbox") {
+    } else if (field.field_type === "checkbox" && !field.isDeleted) {
       inputElement = createCheckboxInput(field, dataContent[field.field_name]);
-    } else if (field.field_type === "checkbox") {
+    } else if (field.field_type === "checkbox" && !field.isDeleted) {
       inputElement = createCheckboxInput(field, dataContent[field.field_name]);
     }
 
@@ -84,6 +86,7 @@ submitButton.addEventListener("click", () => {
   event.preventDefault();
   const dataContent = {};
   const updatedFields = {};
+  let hasRequiredFields = false;
 
   formContainer.querySelectorAll(".form-group").forEach((group) => {
     const input = group.querySelector("input, select, textarea, option");
@@ -104,6 +107,13 @@ submitButton.addEventListener("click", () => {
         updatedFields[fieldName] = newValue;
       }
     }
+  }
+  if (hasRequiredFields) {
+    const errorMessage = document.createElement("div");
+    errorMessage.classList.add("alert", "alert-danger");
+    errorMessage.textContent = "Please fill in all required fields.";
+    formContainer.appendChild(errorMessage);
+    return;
   }
 
   if (Object.keys(updatedFields).length === 0) {
@@ -142,6 +152,29 @@ formContainer.addEventListener("change", (event) => {
   }
 });
 
+function createFileInput(field) {
+  const fileInput = document.createElement("input");
+  fileInput.type = "file";
+  fileInput.classList.add("form-control-file");
+  fileInput.id = field.field_name;
+
+  fileInput.accept = field.type === ".pdf" ? "application/pdf" : "image/*";
+
+  fileInput.required = true;
+
+  const label = document.createElement("label");
+  label.setAttribute("for", field.field_name);
+  label.textContent = field.field_name;
+
+  const fileContainer = document.createElement("div");
+  fileContainer.classList.add("form-group");
+  fileContainer.appendChild(label);
+  fileContainer.appendChild(fileInput);
+  const requiredLabel = createRequiredLabel(field.required);
+  fileContainer.appendChild(requiredLabel);
+
+  return fileContainer;
+}
 function createCountryInput(field, defaultValue) {
   const container = document.createElement("div");
   container.classList.add("form-group");
@@ -227,9 +260,8 @@ function createCitySelect() {
     const cities = data[selectedCountry];
     const selectedCity = select.value;
 
-    updatedFields.city = selectedCity; // Add selected city to updatedFields
+    updatedFields.city = selectedCity;
 
-    // You can also update the city options here if needed
     updateCityOptions(select, cities, selectedCity);
   });
 
@@ -402,8 +434,6 @@ function submitForm(documentId, dataContent) {
   if (citySelect) {
     const selectedCity = citySelect.value;
     dataContent.city = selectedCity;
-  } else {
-    alert("nonon");
   }
   for (const fieldName in dataContent) {
     if (dataContent.hasOwnProperty(fieldName)) {
@@ -445,7 +475,6 @@ function submitForm(documentId, dataContent) {
     data: JSON.stringify(requestData),
     success: function (data) {
       if (data) {
-        // alert("Document updated successfully");
         location.reload();
       } else {
         alert("Failed to update document");

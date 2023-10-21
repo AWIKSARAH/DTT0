@@ -77,23 +77,23 @@ const FormComponent = (function () {
     fields.forEach((field) => {
       let inputElement;
 
-      if (field.field_type === "text") {
+      if (field.field_type === "text" && !field.isDeleted) {
         inputElement = createTextInput(field);
-      } else if (field.field_type === "file") {
+      } else if (field.field_type === "file" && !field.isDeleted) {
         inputElement = createFileInput(field);
-      } else if (field.field_type === "number") {
+      } else if (field.field_type === "number" && !field.isDeleted) {
         inputElement = createNumberInput(field);
-      } else if (field.field_type === "country") {
+      } else if (field.field_type === "country" && !field.isDeleted) {
         inputElement = createCountryInput(field);
-      } else if (field.field_type === "city") {
+      } else if (field.field_type === "city" && !field.isDeleted) {
         hasCityField = true;
-      } else if (field.field_type === "select") {
+      } else if (field.field_type === "select" && !field.isDeleted) {
         inputElement = createSelectInput(field, field.options);
-      } else if (field.field_type === "date") {
+      } else if (field.field_type === "date" && !field.isDeleted) {
         inputElement = createDateInput(field);
-      } else if (field.field_type === "checkbox") {
+      } else if (field.field_type === "checkbox" && !field.isDeleted) {
         inputElement = createCheckboxInput(field, field.options);
-      } else if (field.field_type === "radio") {
+      } else if (field.field_type === "radio" && !field.isDeleted) {
         inputElement = createRadioInput(field, field.options);
       }
 

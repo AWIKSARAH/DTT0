@@ -40,100 +40,81 @@
             </div>
         </div>
     </div>
+
+    <div class="modal fade" id="updateModal" tabindex="-1" role="dialog" aria-labelledby="updateModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="updateModalLabel">Update Template</h5>
+                    <button type="button" class="btn close" data-bs-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div id="formContainer">
+                    </div>
+                    <button id="addFieldButton" class="btn btn-secondary">Add Field</button>
+                </div>
+                <div class="row">
+                    <form>
+                        <div id="add-field-form" style="display: none;">
+                            <div class="form-group">
+                                <label for="new-field-name">Field Name</label>
+                                <input type="text" class="form-control" id="new-field-name"
+                                    placeholder="Enter field name">
+                                <label for="field-required">Required</label>
+                                <input type="checkbox" class="form-check-input" id="field-required">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="new-field-type">Field Type</label>
+                                <select class="form-control" id="new-field-type">
+                                    <option selected disabled>Choose one</option>
+                                    <option value="text">Text</option>
+                                    <option value="checkbox">Checkbox</option>
+                                    <option value="radio">Radio</option>
+                                    <option value="date">Date</option>
+                                    <option value="number">Number</option>
+                                    <option value="select">Select</option>
+                                    <option value="file">File</option>
+                                    <option value="country">Country</option>
+                                    <option value="city">City</option>
+                                </select>
+                            </div>
+                            <div class="form-group" id="file-accept-container-new" style="display: none;">
+                                <label for="new-file-accept">File Accept</label>
+                                <select class="form-control" id="new-file-accept">
+                                    <option value="image/*">Images</option>
+                                    <option value=".pdf">PDF</option>
+                                </select>
+                            </div>
+                            <div class="form-group" id="field-option-new" style="display: none;">
+                                <label>Options</label>
+                                <div id="options-container">
+                                    <input type="text" class="form-control" id="new-option" placeholder="Enter option">
+                                    <button class="btn btn-secondary" id="add-option" type="button">Add Option</button>
+                                </div>
+                            </div>
+
+
+
+                            <div class="form-group col-md-6">
+                                <button type="button" class="btn btn-primary" id="save-template">Save Template</button>
+                            </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn close" data-bs-dismiss="modal" aria-label="close">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="updateSubmit">Save changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const templateList = document.getElementById("template-list");
-            const successMessage = document.getElementById("success-message");
-            const typeSelect = document.getElementById("typeSelect");
-            function deleteTemplate(templateId) {
-                $.ajax({
-                    url: `/DTT/delete_template?id=${templateId}`,
-                    method: "DELETE",
-                    dataType: "json",
-                    success: function (data) {
-                        if (data.success) {
-                            const row = document.querySelector(`[data-template-id="${templateId}"]`);
-                            if (row) {
-                                row.remove();
-                                showSuccessMessage();
-                            }
-                        } else {
-                            console.error("Failed to delete template:", data.error);
-                        }
-                    },
-                    error: function (error) {
-                        console.error("An error occurred:", error.responseText);
-                    }
-                });
-            }
-            function fetchTypes() {
-                fetch("/DTT/get_types/")
-                    .then(response => response.json())
-                    .then(data => {
-                        data.types.forEach(type => {
-                            const option = document.createElement("option");
-                            option.value = type.type_id;
-                            option.textContent = type.type_name;
-                            typeSelect.appendChild(option);
-                        });
-
-                        typeSelect.addEventListener("change", () => {
-                            const selectedType = typeSelect.value;
-                            updateTemplateList(selectedType);
-                        });
-
-                        const initialSelectedTypeId = typeSelect.value;
-                        if (initialSelectedTypeId !== "") {
-                            updateTemplateList(initialSelectedTypeId);
-                        }
-                    })
-                    .catch(error => console.error("Failed to fetch types:", error));
-            }
-
-            function updateTemplateList(selectedTypeId) {
-                fetch(`/DTT/get_templates_by_type?type_id=${selectedTypeId}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        templateList.innerHTML = "";
-
-                        if (data && data.templates && Array.isArray(data.templates) && data.templates.length > 0) {
-                            data.templates.forEach(template => {
-                                const row = templateList.insertRow();
-                                row.dataset.templateId = template.template_id;
-                                row.insertCell(0).textContent = template.template_name;
-                                row.insertCell(1).innerHTML = '<button class="btn btn-danger deleteTemplate" data-id="' + template.template_id + '">Delete</button>';
-                            });
-
-                            const deleteButtons = document.querySelectorAll(".deleteTemplate");
-                            deleteButtons.forEach(button => {
-                                button.addEventListener("click", function () {
-                                    const templateId = button.getAttribute("data-id");
-                                    if (confirm("Are you sure you want to delete this template?")) {
-                                        deleteTemplate(templateId);
-                                    }
-                                });
-                            });
-                        } else {
-                            const noTemplatesRow = templateList.insertRow();
-                            const noTemplatesCell = noTemplatesRow.insertCell();
-                            noTemplatesCell.colSpan = 2;
-                            noTemplatesCell.textContent = "No templates available for this type.";
-                        }
-                    })
-                    .catch(error => console.error("Failed to fetch templates by type:", error));
-            }
-
-            fetchTypes();
-
-            const initialSelectedTypeId = typeSelect.value;
-            if (initialSelectedTypeId !== "") {
-                updateTemplateList(initialSelectedTypeId);
-            }
-        });
-
-    </script>
+    <script src="../js/template.js"></script>
 
 
 </body>

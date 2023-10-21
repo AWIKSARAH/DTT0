@@ -70,9 +70,13 @@ class TemplateModel
 
     public function updateTemplate($templateId, $templateName, $templateStructure, $typeId)
     {
-        $query = "UPDATE template SET template_name = ?, template_structure = ?, type_id = ? WHERE template_id = ?";
+        $query = "UPDATE template SET template_name = :template_name, template_structure = :template_structure, type_id = :type_id WHERE template_id = :template_id";
         $stmt = $this->db->prepare($query);
-        $stmt->bind_param("ssii", $templateName, $templateStructure, $typeId, $templateId);
+
+        $stmt->bindValue(':template_name', $templateName);
+        $stmt->bindValue(':template_structure', $templateStructure);
+        $stmt->bindValue(':type_id', $typeId);
+        $stmt->bindValue(':template_id', $templateId);
 
         if ($stmt->execute()) {
             return true;
@@ -80,6 +84,7 @@ class TemplateModel
 
         return false;
     }
+
 
 
     public function getTemplateNames()

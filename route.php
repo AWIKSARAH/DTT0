@@ -131,6 +131,9 @@ switch ($request) {
         break;
 
 
+    case '/DTT/update_template':
+        $templateController->update();
+        break;
 
 
 

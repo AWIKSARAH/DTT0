@@ -101,11 +101,11 @@
                 var isFieldRequired = $('#field-required').prop('checked');
 
                 var existingField = fields.find(field => field.field_name === fieldName);
-    if (existingField) {
-        alert("Field name already exists. Please choose a different name.");
-        return;
-    }
-    
+                if (existingField) {
+                    alert("Field name already exists. Please choose a different name.");
+                    return;
+                }
+
                 var field = {
                     field_name: fieldName,
                     field_type: fieldType,
@@ -190,23 +190,30 @@
                     html += '<h3>Fields:</h3>';
                     html += '<h2>Document Name: ' + $('#Document-Name').val() + '</h2>';
                     html += '<ul>';
-                    fields.forEach(function (field) {
-                        html += '<li>' + field.field_name + ' - ' + field.field_type + '</li>';
+                    fields.forEach(function (field, index) {
+                        html += '<li>' + field.field_name + ' - ' + field.field_type +
+                            ' <span class="remove-field bg-danger text-white rounded-circle p-2" data-index="' + index + '"> x </span></li>';
                     });
                     html += '</ul>';
                     html += '</div>';
                 }
-                if (fields.length > 0) {
-
-                }
                 html += '</div>';
                 $('#fields-container').html(html);
+
+                $('.remove-field').on('click', function () {
+                    var index = $(this).data('index');
+                    fields.splice(index, 1);
+                    updateFieldsContainer();
+                    updateJsonView();
+                });
             }
+
 
             function updateJsonView() {
                 var jsonText = JSON.stringify(fields, null, 2);
                 $('#json-view').text(jsonText);
             }
+
 
             $('#save-template').on('click', function () {
                 var fieldTypeTemplate = $('#type-select').val();
